@@ -6,10 +6,7 @@ import { PageDto } from '../pagination/page.dto';
 import { Node } from './base.entity';
 
 export interface IBaseService<T, C, U> {
-  findByID(
-    id: string,
-    relations?: Extract<keyof T, string>[],
-  ): Promise<T | undefined>;
+  findByID(id: string): Promise<T | undefined>;
   findOne(options?: FindOneOptions<T>): Promise<T | null>;
   findAll(options: PageOptionsDto): Promise<PageDto<T>>;
   findMany(
@@ -39,10 +36,7 @@ export class BaseService<T extends Node, C, U>
    * @param id UUID to query
    * @param relations Entity relations to populate
    */
-  async findByID(
-    id: string,
-    relations: Extract<keyof T, string>[] = [],
-  ): Promise<T> {
+  async findByID(id: string): Promise<T> {
     // @ts-expect-error
     return this.repository.findOne({ where: { id } });
   }

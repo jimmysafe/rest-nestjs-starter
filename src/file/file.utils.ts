@@ -19,7 +19,7 @@ export const localMulterOptions = {
 
 /** Decorator */
 export const ApiFile =
-  (fileName: string = 'file'): MethodDecorator =>
+  (fileName = 'file'): MethodDecorator =>
   (target: any, propertyKey: any, descriptor: PropertyDescriptor) => {
     ApiBody({
       schema: {
