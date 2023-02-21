@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dev Portal</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"
+      integrity="sha512-qTXRIMyZIFb8iQcfjXWCO8+M5Tbc38Qi5WzdPOYZHIlZpzBHG3L3by84BBBOiRGiEb7KKtAOAs5qYdUiZiQNNQ=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script>
+      let idToken;
+      let accessToken;
+
+      const setDetails = () => {
+        const params = new URLSearchParams(
+          window.location.hash.replace('#', ''),
+        );
+        idToken = params.get('id_token');
+        accessToken = params.get('access_token');
+        const tokenType = params.get('token_type');
+        const expiresIn = params.get('expires_in');
+
+        document.getElementById('access-token').textContent = accessToken;
+        document.getElementById('id-token').textContent = idToken;
+        document.getElementById(
+          'token-type',
+        ).textContent = `${tokenType} token`;
+        document.getElementById('token-expiry').textContent = `Expires ${moment
+          .duration(expiresIn, 'seconds')
+          .humanize(true)}`;
+      };
+
+      const copy = (token) => {
+        switch (token) {
+          case 'access':
+            navigator.clipboard.writeText(accessToken);
+            break;
+          case 'id':
+            navigator.clipboard.writeText(idToken);
+            break;
+          default:
+            throw new Error('Unkown token name');
+        }
+
+        const header = document.getElementById('header');
+        header.textContent = 'Copied ✅';
+        setTimeout(() => {
+          header.textContent = 'Your tokens are below. Click to copy.';
+        }, 1500);
+      };
+
+      window.addEventListener('load', setDetails);
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <div class="card--header">
+        <h1>Dev Portal</h1>
+        <h2>Successful Login</h2>
+      </div>
+      <p id="header">Your tokens are below. Click to copy.</p>
+      <div class="tokens">
+        <div class="tokens--token">
+          <span class="token--component-label">Access Token</span>
+          <div class="token--component-value" onclick="copy('access')">
+            <span id="access-token">Loading...</span>
+          </div>
+        </div>
+        <div class="tokens--token">
+          <span class="token--component-label">ID Token</span>
+          <div class="token--component-value" onclick="copy('id')">
+            <span id="id-token">Loading...</span>
+          </div>
+        </div>
+        <span class="tokens--detail" id="token-type">? token</span>
+        <span class="tokens--detail"> | </span>
+        <span class="tokens--detail" id="token-expiry">Expires in ? days</span>
+      </div>
+    </div>
+  </body>
+</html>

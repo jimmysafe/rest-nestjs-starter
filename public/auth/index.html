@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dev Portal</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script>
+      const getPortalUrl = async () => {
+        const apiUrl = new URL(window.location);
+        apiUrl.pathname = 'portal/url';
+
+        const res = await fetch(apiUrl);
+        const { url } = await res.json();
+
+        return url;
+      };
+
+      const redirect = async () => {
+        const url = await getPortalUrl();
+        window.location.href = url;
+      };
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <div class="card--header">
+        <h1>Dev Portal</h1>
+        <h2>Generate access tokens</h2>
+      </div>
+      <p id="header">
+        Click the button below to login to the dev portal and get a set of
+        access tokens valid for this API.
+      </p>
+      <button class="button--yellow" onclick="redirect()">Login</button>
+    </div>
+  </body>
+</html>

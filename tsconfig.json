@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "es6",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "esModuleInterop": true,
+    "strict": true,
+    "strictNullChecks": true,
+    "alwaysStrict": true,
+    "strictPropertyInitialization": false,
+    "lib": ["es2019"],
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  }
+}
