@@ -67,7 +67,7 @@ export class BaseService<T extends Node, C, U>
 
     queryBuilder
       .where(!user ? '1=1' : `${name}.userId = :userId`, { userId: user?.id })
-      .andWhere(formatQueryFilters(name, options.filter))
+      .andWhere(formatQueryFilters(name, options.filters))
       .orderBy(`${name}.created`, options.order)
       .skip(options.skip)
       .take(options.take);

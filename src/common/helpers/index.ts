@@ -1,13 +1,15 @@
 /**
- * Converts query string filters to SQL
+ * Converts query filters to SQL
  * @param entityName Name of the single entity
- * @param strFilters filters returned by the query params
+ * @param queryFilters filters returned by the query params
  * @returns string || {}
  */
-export const formatQueryFilters = (entityName: string, strFilters?: string) => {
-  if (!strFilters) return {};
-  const parsedFilters = JSON.parse(strFilters);
-  const filters = Object.entries(parsedFilters)
+export const formatQueryFilters = (
+  entityName: string,
+  queryFilters?: string,
+) => {
+  if (!queryFilters) return {};
+  const filters = Object.entries(queryFilters)
     .map(([k, v]) => `${entityName}.${k} = '${v}'`)
     .join(' AND ');
 

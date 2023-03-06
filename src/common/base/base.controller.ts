@@ -18,17 +18,14 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
-  ApiExtraModels,
   ApiOkResponse,
   ApiParam,
-  ApiQuery,
-  ApiResponse,
   ApiUnauthorizedResponse,
-  getSchemaPath,
 } from '@nestjs/swagger';
 import { In } from 'typeorm';
 import { Auth, CurrentUser } from '../../auth/auth.decorators';
 import { User, UserRole } from '../../user/user.entity';
+import { ApiFilterQuery } from '../decorators/ApiFilterQuery';
 import { PageOptionsDto } from '../pagination/page-options.dto';
 import { ApiPaginatedResponse } from '../pagination/page-response.decorator';
 import { PageDto } from '../pagination/page.dto';
@@ -36,7 +33,7 @@ import { IdParams } from '../types/id-params';
 import { IBaseService } from './base.service';
 
 export interface IBaseController<T, C, U> {
-  getOne(params: IdParams, user?: User): Promise<T | null>;
+  getOne(params: IdParams, user?: User): Promise<T>;
   get(options: PageOptionsDto): Promise<PageDto<T>>;
   create(body: C): Promise<T>;
   update(params: IdParams, body: U): Promise<T>;
@@ -124,13 +121,13 @@ export function ControllerFactory<T, C, U, F>(
       name: 'id',
       description: `ID of ${params.entity.single.name}`,
     })
-    @ApiResponse({ type: params.entity.single })
+    @ApiOkResponse({ type: params.entity.single })
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     async getOne(
       @Param()
       queryParams: IdParams,
       @CurrentUser() user: User,
-    ): Promise<T | null> {
+    ): Promise<T> {
       const item = await this.service.findByID(
         queryParams.id,
         params.getOne.byUser && user ? user : undefined,
@@ -144,18 +141,7 @@ export function ControllerFactory<T, C, U, F>(
     // @Auth(...(params.get?.roles || []))
     @ApiPaginatedResponse(params.entity.single)
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-    @ApiExtraModels(params.get.filterDto)
-    @ApiQuery({
-      name: 'filter',
-      required: false,
-      schema: {
-        type: 'array',
-        example: [],
-        items: {
-          $ref: getSchemaPath(params.get.filterDto),
-        },
-      },
-    })
+    @ApiFilterQuery('filters', params.get.filterDto)
     async get(
       @Query() optionsDto: PageOptionsDto,
       @CurrentUser() user?: User,
@@ -177,7 +163,7 @@ export function ControllerFactory<T, C, U, F>(
       name: 'id',
       description: `ID of ${params.entity.single.name}`,
     })
-    @ApiResponse({ type: Boolean })
+    @ApiOkResponse({ type: Boolean })
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     async delete(
       @Param() queryParams: IdParams,
