@@ -1,5 +1,6 @@
 import { User } from 'src/user/user.entity';
 import { FindManyOptions, FindOneOptions, Repository } from 'typeorm';
+import { formatQueryFilters } from '../helpers';
 import { PageMetaDto } from '../pagination/page-meta.dto';
 import { PageOptionsDto } from '../pagination/page-options.dto';
 import { PageDto } from '../pagination/page.dto';
@@ -60,12 +61,13 @@ export class BaseService<T extends Node, C, U>
   /**
    * Get all entites
    */
-  async findAll(options: PageOptionsDto, user?: User): Promise<PageDto<T>> {
+  async findAll(options: any, user?: User): Promise<PageDto<T>> {
     const name = this.entity.name.toLocaleLowerCase();
     const queryBuilder = this.repository.createQueryBuilder(name);
 
     queryBuilder
       .where(!user ? '1=1' : `${name}.userId = :userId`, { userId: user?.id })
+      .andWhere(formatQueryFilters(name, options.filter))
       .orderBy(`${name}.created`, options.order)
       .skip(options.skip)
       .take(options.take);

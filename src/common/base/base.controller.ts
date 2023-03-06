@@ -18,10 +18,13 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
+  ApiExtraModels,
   ApiOkResponse,
   ApiParam,
+  ApiQuery,
   ApiResponse,
   ApiUnauthorizedResponse,
+  getSchemaPath,
 } from '@nestjs/swagger';
 import { In } from 'typeorm';
 import { Auth, CurrentUser } from '../../auth/auth.decorators';
@@ -40,7 +43,7 @@ export interface IBaseController<T, C, U> {
   delete(params: IdParams, user?: User): Promise<boolean | null>;
 }
 
-type ControllerFactoryParams<T, C, U> = {
+type ControllerFactoryParams<T, C, U, F> = {
   entity: {
     single: Type<T>;
   };
@@ -61,6 +64,7 @@ type ControllerFactoryParams<T, C, U> = {
   get: {
     roles: UserRole[];
     byUser?: boolean;
+    filterDto: Type<F>;
   };
   delete: {
     roles: UserRole[];
@@ -87,8 +91,8 @@ export class AbstractValidationPipe extends ValidationPipe {
   }
 }
 
-export function ControllerFactory<T, C, U>(
-  params: ControllerFactoryParams<T, C, U>,
+export function ControllerFactory<T, C, U, F>(
+  params: ControllerFactoryParams<T, C, U, F>,
 ): Type<IBaseController<T, C, U>> {
   const createPipe = new AbstractValidationPipe(
     { whitelist: true, transform: true },
@@ -137,9 +141,21 @@ export function ControllerFactory<T, C, U>(
     }
 
     @Get()
-    @Auth(...(params.get?.roles || []))
+    // @Auth(...(params.get?.roles || []))
     @ApiPaginatedResponse(params.entity.single)
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+    @ApiExtraModels(params.get.filterDto)
+    @ApiQuery({
+      name: 'filter',
+      required: false,
+      schema: {
+        type: 'array',
+        example: [],
+        items: {
+          $ref: getSchemaPath(params.get.filterDto),
+        },
+      },
+    })
     async get(
       @Query() optionsDto: PageOptionsDto,
       @CurrentUser() user?: User,

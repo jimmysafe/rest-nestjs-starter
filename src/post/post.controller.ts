@@ -3,6 +3,7 @@ import { ApiTags } from '@nestjs/swagger';
 import { UserRole } from 'src/user/user.entity';
 import { ControllerFactory } from '../common/base/base.controller';
 import { PostCreateDto } from './dto/post.create.dto';
+import { PostFilterDto } from './dto/post.filter.dto';
 import { PostUpdateDto } from './dto/post.update.dto';
 import { Post } from './post.entity';
 import { PostService } from './post.service';
@@ -12,7 +13,8 @@ import { PostService } from './post.service';
 export class PostController extends ControllerFactory<
   Post,
   PostCreateDto,
-  PostUpdateDto
+  PostUpdateDto,
+  PostFilterDto
 >({
   entity: {
     single: Post,
@@ -33,6 +35,7 @@ export class PostController extends ControllerFactory<
   },
   get: {
     roles: [UserRole.USER],
+    filterDto: PostFilterDto,
     byUser: true,
   },
   getOne: {
