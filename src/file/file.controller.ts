@@ -21,7 +21,7 @@ import { ApiFile, FileUploadResponse, localMulterOptions } from './file.utils';
 export class FileController {
   constructor(private fileService: FileService) {}
 
-  @Auth(false, UserRole.USER)
+  @Auth(UserRole.USER)
   @UseInterceptors(FileInterceptor('file', localMulterOptions))
   @Post('/local/upload')
   @ApiFile()
@@ -34,7 +34,7 @@ export class FileController {
     return this.fileService.uploadFileLocal(file);
   }
 
-  @Auth(false, UserRole.USER)
+  @Auth(UserRole.USER)
   @UseInterceptors(FileInterceptor('file'))
   @Post('/s3/upload')
   @ApiFile()

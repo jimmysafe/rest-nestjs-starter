@@ -1,9 +1,6 @@
-import { Controller, Get, Query } from '@nestjs/common';
-import { ApiTags, ApiUnauthorizedResponse } from '@nestjs/swagger';
-import { Auth, CurrentUser } from 'src/auth/auth.decorators';
-import { PageOptionsDto } from 'src/common/pagination/page-options.dto';
-import { ApiPaginatedResponse } from 'src/common/pagination/page-response.decorator';
-import { User, UserRole } from 'src/user/user.entity';
+import { Controller } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
+import { UserRole } from 'src/user/user.entity';
 import { ControllerFactory } from '../common/base/base.controller';
 import { PostCreateDto } from './dto/post.create.dto';
 import { PostUpdateDto } from './dto/post.update.dto';
@@ -22,36 +19,28 @@ export class PostController extends ControllerFactory<
   },
   create: {
     dto: PostCreateDto,
-    roles: [],
+    roles: [UserRole.USER],
     attachUser: true,
   },
   update: {
     dto: PostUpdateDto,
-    roles: [],
+    roles: [UserRole.USER],
+    byUser: true,
   },
   delete: {
-    roles: [],
+    roles: [UserRole.USER],
+    byUser: true,
   },
   get: {
-    roles: [],
-    // public: true,
+    roles: [UserRole.USER],
+    byUser: true,
   },
   getOne: {
-    roles: [],
+    roles: [UserRole.USER],
+    byUser: true,
   },
 }) {
   constructor(protected service: PostService) {
     super();
-  }
-
-  @Get('user')
-  @Auth(false, UserRole.USER)
-  @ApiPaginatedResponse(Post)
-  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-  async getByUser(
-    @Query() optionsDto: PageOptionsDto,
-    @CurrentUser() user: User,
-  ) {
-    return this.service.findMany({ where: { user } }, optionsDto);
   }
 }

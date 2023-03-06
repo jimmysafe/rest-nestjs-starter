@@ -15,6 +15,7 @@ import {
   ValidationPipeOptions,
 } from '@nestjs/common';
 import {
+  ApiBearerAuth,
   ApiBody,
   ApiCreatedResponse,
   ApiOkResponse,
@@ -22,6 +23,7 @@ import {
   ApiResponse,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
+import { In } from 'typeorm';
 import { Auth, CurrentUser } from '../../auth/auth.decorators';
 import { User, UserRole } from '../../user/user.entity';
 import { PageOptionsDto } from '../pagination/page-options.dto';
@@ -31,11 +33,11 @@ import { IdParams } from '../types/id-params';
 import { IBaseService } from './base.service';
 
 export interface IBaseController<T, C, U> {
-  getOne(params: IdParams): Promise<T | undefined>;
+  getOne(params: IdParams, user?: User): Promise<T | null>;
   get(options: PageOptionsDto): Promise<PageDto<T>>;
   create(body: C): Promise<T>;
   update(params: IdParams, body: U): Promise<T>;
-  delete(params: IdParams): Promise<boolean | null>;
+  delete(params: IdParams, user?: User): Promise<boolean | null>;
 }
 
 type ControllerFactoryParams<T, C, U> = {
@@ -44,26 +46,25 @@ type ControllerFactoryParams<T, C, U> = {
   };
   create: {
     dto: Type<C>;
-    roles?: UserRole[];
-    public?: boolean;
+    roles: UserRole[];
     attachUser?: boolean;
   };
   update: {
     dto: Type<U>;
-    roles?: UserRole[];
-    public?: boolean;
+    roles: UserRole[];
+    byUser?: boolean;
   };
   getOne: {
-    roles?: UserRole[];
-    public?: boolean;
+    roles: UserRole[];
+    byUser?: boolean;
   };
   get: {
-    roles?: UserRole[];
-    public?: boolean;
+    roles: UserRole[];
+    byUser?: boolean;
   };
   delete: {
-    roles?: UserRole[];
-    public?: boolean;
+    roles: UserRole[];
+    byUser?: boolean;
   };
 };
 
@@ -98,14 +99,12 @@ export function ControllerFactory<T, C, U>(
     { body: params.update.dto },
   );
 
+  @ApiBearerAuth()
   class BaseController<T, C, U> implements IBaseController<T, C, U> {
     protected service: IBaseService<T, C, U>;
 
     @Post()
-    @Auth(
-      params.create.public,
-      ...(params.create?.roles || [UserRole.USER, UserRole.ADMIN]),
-    )
+    @Auth(...(params.create?.roles || []))
     @UsePipes(createPipe)
     @ApiBody({ type: params.create.dto })
     @ApiCreatedResponse({ type: params.entity.single })
@@ -116,10 +115,7 @@ export function ControllerFactory<T, C, U>(
     }
 
     @Get(':id')
-    @Auth(
-      params.getOne.public,
-      ...(params.getOne?.roles || [UserRole.USER, UserRole.ADMIN]),
-    )
+    @Auth(...(params.getOne?.roles || []))
     @ApiParam({
       name: 'id',
       description: `ID of ${params.entity.single.name}`,
@@ -128,45 +124,60 @@ export function ControllerFactory<T, C, U>(
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     async getOne(
       @Param()
-      params: IdParams,
-    ): Promise<T | undefined> {
-      return this.service.findByID(params.id);
+      queryParams: IdParams,
+      @CurrentUser() user: User,
+    ): Promise<T | null> {
+      const item = await this.service.findByID(
+        queryParams.id,
+        params.getOne.byUser && user ? user : undefined,
+      );
+
+      if (!item) throw new NotFoundException();
+      return item;
     }
 
     @Get()
-    @Auth(
-      params.get.public,
-      ...(params.get?.roles || [UserRole.USER, UserRole.ADMIN]),
-    )
+    @Auth(...(params.get?.roles || []))
     @ApiPaginatedResponse(params.entity.single)
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-    async get(@Query() optionsDto: PageOptionsDto): Promise<PageDto<T>> {
-      return this.service.findAll(optionsDto);
+    async get(
+      @Query() optionsDto: PageOptionsDto,
+      @CurrentUser() user?: User,
+    ): Promise<PageDto<T>> {
+      if (optionsDto.ids)
+        return this.service.findMany(
+          { where: { id: In(optionsDto.ids.split(',')) } },
+          optionsDto,
+        );
+      return this.service.findAll(
+        optionsDto,
+        params.get.byUser && user ? user : undefined,
+      );
     }
 
     @Delete(':id')
-    @Auth(
-      params.delete.public,
-      ...(params.delete?.roles || [UserRole.USER, UserRole.ADMIN]),
-    )
+    @Auth(...(params.delete?.roles || []))
     @ApiParam({
       name: 'id',
       description: `ID of ${params.entity.single.name}`,
     })
     @ApiResponse({ type: Boolean })
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-    async delete(@Param() params: IdParams): Promise<boolean | null> {
-      const item = await this.service.findByID(params.id);
+    async delete(
+      @Param() queryParams: IdParams,
+      @CurrentUser() user?: User,
+    ): Promise<boolean | null> {
+      const item = await this.service.findByID(
+        queryParams.id,
+        params.delete.byUser && user ? user : undefined,
+      );
       if (!item) throw new NotFoundException();
       return this.service.delete(item);
     }
 
     @Patch(':id')
     @UsePipes(updatePipe)
-    @Auth(
-      params.update.public,
-      ...(params.update?.roles || [UserRole.USER, UserRole.ADMIN]),
-    )
+    @Auth(...(params.update?.roles || []))
     @ApiBody({ type: params.update.dto })
     @ApiParam({
       name: 'id',
@@ -174,8 +185,15 @@ export function ControllerFactory<T, C, U>(
     })
     @ApiOkResponse({ type: params.entity.single })
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
-    async update(@Param() params: IdParams, @Body() body: U): Promise<T> {
-      const item = await this.service.findByID(params.id);
+    async update(
+      @Param() queryParams: IdParams,
+      @Body() body: U,
+      @CurrentUser() user?: User,
+    ): Promise<T> {
+      const item = await this.service.findByID(
+        queryParams.id,
+        params.update.byUser && user ? user : undefined,
+      );
       if (!item) throw new NotFoundException();
       return this.service.update(item, body);
     }

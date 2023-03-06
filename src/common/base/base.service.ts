@@ -6,9 +6,9 @@ import { PageDto } from '../pagination/page.dto';
 import { Node } from './base.entity';
 
 export interface IBaseService<T, C, U> {
-  findByID(id: string): Promise<T | undefined>;
+  findByID(id: string, user?: User): Promise<T | null>;
   findOne(options?: FindOneOptions<T>): Promise<T | null>;
-  findAll(options: PageOptionsDto): Promise<PageDto<T>>;
+  findAll(options: PageOptionsDto, user?: User): Promise<PageDto<T>>;
   findMany(
     options: FindManyOptions,
     pageOptions: PageOptionsDto,
@@ -36,9 +36,16 @@ export class BaseService<T extends Node, C, U>
    * @param id UUID to query
    * @param relations Entity relations to populate
    */
-  async findByID(id: string): Promise<T> {
-    // @ts-expect-error
-    return this.repository.findOne({ where: { id } });
+  async findByID(id: string, user?: User): Promise<T | null> {
+    const name = this.entity.name.toLocaleLowerCase();
+    const queryBuilder = this.repository.createQueryBuilder(name);
+
+    return queryBuilder
+      .where('id = :id', { id })
+      .andWhere(!user ? '1=1' : `${name}.userId = :userId`, {
+        userId: user?.id,
+      })
+      .getOne();
   }
 
   /**
@@ -53,11 +60,12 @@ export class BaseService<T extends Node, C, U>
   /**
    * Get all entites
    */
-  async findAll(options: PageOptionsDto): Promise<PageDto<T>> {
+  async findAll(options: PageOptionsDto, user?: User): Promise<PageDto<T>> {
     const name = this.entity.name.toLocaleLowerCase();
     const queryBuilder = this.repository.createQueryBuilder(name);
 
     queryBuilder
+      .where(!user ? '1=1' : `${name}.userId = :userId`, { userId: user?.id })
       .orderBy(`${name}.created`, options.order)
       .skip(options.skip)
       .take(options.take);

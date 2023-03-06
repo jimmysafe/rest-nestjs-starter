@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { dbConfig } from './db.config';
 import { PostModule } from './post/post.module';
 import { UserModule } from './user/user.module';
 import { SqsModule } from '@ssut/nestjs-sqs';
@@ -12,21 +11,14 @@ import { ServeStaticModule } from '@nestjs/serve-static';
 import { AuthModule } from './auth/auth.module';
 import { S3Module } from './s3/s3.module';
 import { FileModule } from './file/file.module';
+import { dataSourceOptions } from 'db/data-source';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
     }),
-    TypeOrmModule.forRootAsync({
-      imports: [ConfigModule],
-      useFactory: (configService: ConfigService) =>
-        dbConfig(configService, {
-          synchronize: true,
-          logging: true,
-        }),
-      inject: [ConfigService],
-    }),
+    TypeOrmModule.forRoot(dataSourceOptions),
     SqsModule.registerAsync({
       imports: [ConfigModule],
       useClass: SqsConfig,
