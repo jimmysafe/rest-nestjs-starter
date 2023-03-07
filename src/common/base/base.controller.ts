@@ -138,7 +138,7 @@ export function ControllerFactory<T, C, U, F>(
     }
 
     @Get()
-    // @Auth(...(params.get?.roles || []))
+    @Auth(...(params.get?.roles || []))
     @ApiPaginatedResponse(params.entity.single)
     @ApiUnauthorizedResponse({ description: 'Unauthorized' })
     @ApiFilterQuery('filters', params.get.filterDto)

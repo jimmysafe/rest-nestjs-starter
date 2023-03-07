@@ -14,7 +14,7 @@ export function ApiFilterQuery(fieldName: string, filterDto: Function) {
       required: false,
       name: fieldName,
       style: 'deepObject',
-      explode: false,
+      explode: true,
       type: 'object',
       schema: {
         $ref: getSchemaPath(filterDto),
