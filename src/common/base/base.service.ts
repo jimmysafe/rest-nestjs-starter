@@ -7,12 +7,17 @@ import { PageDto } from '../pagination/page.dto';
 import { Node } from './base.entity';
 
 export interface IBaseService<T, C, U> {
-  findByID(id: string, user?: User): Promise<T | null>;
-  findOne(options?: FindOneOptions<T>): Promise<T | null>;
-  findAll(options: PageOptionsDto, user?: User): Promise<PageDto<T>>;
+  findByID(id: string, user?: User, relations?: any[]): Promise<T | null>;
+  findOne(options?: FindOneOptions<T>, relations?: any[]): Promise<T | null>;
+  findAll(
+    options: PageOptionsDto,
+    user?: User,
+    relations?: any[],
+  ): Promise<PageDto<T>>;
   findMany(
     options: FindManyOptions,
     pageOptions: PageOptionsDto,
+    relations?: any[],
   ): Promise<PageDto<T>>;
   create(input: C, user?: User): Promise<T>;
   update(entity: T, input: U): Promise<T>;
@@ -37,12 +42,22 @@ export class BaseService<T extends Node, C, U>
    * @param id UUID to query
    * @param relations Entity relations to populate
    */
-  async findByID(id: string, user?: User): Promise<T | null> {
+  async findByID(
+    id: string,
+    user?: User,
+    relations?: any[],
+  ): Promise<T | null> {
     const name = this.entity.name.toLocaleLowerCase();
     const queryBuilder = this.repository.createQueryBuilder(name);
 
+    if (relations && relations.length > 0) {
+      relations.forEach((r) =>
+        queryBuilder.leftJoinAndSelect(`${name}.${r}`, r),
+      );
+    }
+
     return queryBuilder
-      .where('id = :id', { id })
+      .where(`${name}.id = :id`, { id })
       .andWhere(!user ? '1=1' : `${name}.userId = :userId`, {
         userId: user?.id,
       })
@@ -54,16 +69,38 @@ export class BaseService<T extends Node, C, U>
    * @param options conditions
    * @returns T
    */
-  async findOne(options: FindOneOptions<T>): Promise<T | null> {
-    return this.repository.findOne(options);
+  async findOne(
+    options: FindOneOptions<T>,
+    relations?: any[],
+  ): Promise<T | null> {
+    const name = this.entity.name.toLocaleLowerCase();
+    const queryBuilder = this.repository.createQueryBuilder(name);
+
+    if (relations && relations.length > 0) {
+      relations.forEach((r) =>
+        queryBuilder.leftJoinAndSelect(`${name}.${r}`, r),
+      );
+    }
+
+    return queryBuilder.where(options.where ?? {}).getOne();
   }
 
   /**
    * Get all entites
    */
-  async findAll(options: any, user?: User): Promise<PageDto<T>> {
+  async findAll(
+    options: any,
+    user?: User,
+    relations?: string[],
+  ): Promise<PageDto<T>> {
     const name = this.entity.name.toLocaleLowerCase();
     const queryBuilder = this.repository.createQueryBuilder(name);
+
+    if (relations && relations.length > 0) {
+      relations.forEach((r) =>
+        queryBuilder.leftJoinAndSelect(`${name}.${r}`, r),
+      );
+    }
 
     queryBuilder
       .where(!user ? '1=1' : `${name}.userId = :userId`, { userId: user?.id })
@@ -86,9 +123,16 @@ export class BaseService<T extends Node, C, U>
   async findMany(
     options: FindManyOptions,
     pageOptions: PageOptionsDto,
+    relations?: string[],
   ): Promise<PageDto<T>> {
     const name = this.entity.name.toLocaleLowerCase();
     const queryBuilder = this.repository.createQueryBuilder(name);
+
+    if (relations && relations.length > 0) {
+      relations.forEach((r) =>
+        queryBuilder.leftJoinAndSelect(`${name}.${r}`, r),
+      );
+    }
 
     queryBuilder
       .where(options.where ?? {})

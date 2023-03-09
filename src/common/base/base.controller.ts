@@ -57,11 +57,13 @@ type ControllerFactoryParams<T, C, U, F> = {
   getOne: {
     roles: UserRole[];
     byUser?: boolean;
+    relations?: (keyof T)[];
   };
   get: {
     roles: UserRole[];
     byUser?: boolean;
     filterDto: Type<F>;
+    relations?: (keyof T)[];
   };
   delete: {
     roles: UserRole[];
@@ -131,6 +133,7 @@ export function ControllerFactory<T, C, U, F>(
       const item = await this.service.findByID(
         queryParams.id,
         params.getOne.byUser && user ? user : undefined,
+        params.getOne.relations,
       );
 
       if (!item) throw new NotFoundException();
@@ -150,10 +153,12 @@ export function ControllerFactory<T, C, U, F>(
         return this.service.findMany(
           { where: { id: In(optionsDto.ids.split(',')) } },
           optionsDto,
+          params.get.relations,
         );
       return this.service.findAll(
         optionsDto,
         params.get.byUser && user ? user : undefined,
+        params.get.relations,
       );
     }
 
